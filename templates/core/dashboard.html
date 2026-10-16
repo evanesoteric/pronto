@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Brewery Dashboard</h1>
+
+<div class="row g-3">
+  <div class="col-md-3">
+    <div class="card h-100"><div class="card-body">
+      <h6 class="text-muted text-uppercase">Active Batches</h6>
+      <p class="display-6 mb-0">{{ active_batches }}</p>
+    </div></div>
+  </div>
+  <div class="col-md-3">
+    <div class="card h-100"><div class="card-body">
+      <h6 class="text-muted text-uppercase">Inventory Lots</h6>
+      <p class="display-6 mb-0">{{ inventory_lots }}</p>
+    </div></div>
+  </div>
+  <div class="col-md-3">
+    <div class="card h-100"><div class="card-body">
+      <h6 class="text-muted text-uppercase">Low Stock</h6>
+      <p class="display-6 mb-0">{{ low_stock_count }}</p>
+    </div></div>
+  </div>
+  <div class="col-md-3">
+    <div class="card h-100"><div class="card-body">
+      <h6 class="text-muted text-uppercase">Open Orders</h6>
+      <p class="display-6 mb-0">—</p>
+    </div></div>
+  </div>
+</div>
+
+<div class="mt-4">
+  <h4>Recent Lots</h4>
+  <table class="table table-sm bg-white">
+    <thead>
+      <tr>
+        <th>Item</th><th>Lot</th><th>Facility</th>
+        <th class="text-end">On Hand</th><th>Received</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for lot in recent_lots %}
+      <tr>
+        <td>{{ lot.item.name }}</td>
+        <td>{{ lot.lot_number }}</td>
+        <td>{{ lot.facility.code }}</td>
+        <td class="text-end">{{ lot.quantity_on_hand }} {{ lot.item.unit }}</td>
+        <td>{{ lot.received_at|date:"Y-m-d"|default:"—" }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="5" class="text-muted">No inventory lots yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

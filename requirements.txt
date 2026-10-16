@@ -1,0 +1,16 @@
+Django==5.0.*
+djangorestframework
+django-environ
+django-allauth
+django-crispy-forms
+crispy-bootstrap5
+psycopg[binary]
+django-filter
+drf-spectacular
+celery[redis]
+django-celery-beat
+python-dateutil
+pytest
+pytest-django
+pytest-mock
+factory-boy

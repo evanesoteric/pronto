@@ -1,0 +1,77 @@
+{# templates/inventory/receive_success.html #}
+{% extends "base.html" %}
+
+{% block title %}Received — Pronto{% endblock %}
+
+{% block breadcrumbs %}
+<a href="{% url 'inventory:lots_list' %}" class="text-decoration-none text-muted">Inventory</a>
+<span class="text-muted mx-1">/</span>
+<strong>Received</strong>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+
+    <div class="card border-success mb-4">
+      <div class="card-body text-center py-4">
+        <div class="display-4 text-success mb-2">✓</div>
+        <h3 class="mb-1">Shipment received</h3>
+        <p class="text-muted mb-0">
+          {{ movements|length }} line{{ movements|length|pluralize }} added to inventory.
+        </p>
+      </div>
+    </div>
+
+    {% for m in movements %}
+    <div class="card mb-3">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start">
+          <div>
+            <h5 class="mb-1">{{ m.lot.item.name }}</h5>
+            <div class="text-muted small">
+              <span class="font-monospace">{{ m.lot.item.sku }}</span> ·
+              Lot <span class="font-monospace">{{ m.lot.lot_number }}</span> ·
+              {{ m.lot.facility.code }}
+            </div>
+            <div class="mt-2">
+              <span class="fs-5">{{ m.delta|floatformat:3 }}</span>
+              {{ m.lot.item.unit }} received at
+              ${{ m.lot.unit_cost|floatformat:4 }} / {{ m.lot.item.unit }}
+            </div>
+            {% if m.reference %}
+            <div class="small text-muted mt-1">Ref: {{ m.reference }}</div>
+            {% endif %}
+          </div>
+          <div class="text-end">
+            <a href="/api/barcodes/labels/lot/{{ m.lot.pk }}/" target="_blank"
+               class="btn btn-primary btn-sm mb-2">
+              🖨️ Print label
+            </a>
+            <div>
+              <a href="{% url 'inventory:lot_detail' m.lot.pk %}"
+                 class="btn btn-outline-secondary btn-sm">
+                View lot
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+
+    <div class="d-flex gap-2 mt-4">
+      <a href="{% url 'inventory:receive_form' %}" class="btn btn-outline-primary">
+        ⬇️ Receive another
+      </a>
+      <a href="{% url 'inventory:lots_list' %}" class="btn btn-outline-secondary">
+        View inventory
+      </a>
+      <a href="{% url 'core:dashboard' %}" class="btn btn-outline-secondary">
+        Dashboard
+      </a>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

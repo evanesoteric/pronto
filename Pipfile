@@ -1,0 +1,30 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+djangorestframework = "*"
+django-allauth = "*"
+django-crispy-forms = "*"
+crispy-bootstrap5 = "*"
+django-filter = "*"
+drf-spectacular = "*"
+django-celery-beat = "*"
+python-dateutil = "*"
+pytest = "*"
+pytest-django = "*"
+pytest-mock = "*"
+factory-boy = "*"
+psycopg = {extras = ["binary"], version = "*"}
+celery = {extras = ["redis"], version = "*"}
+django-environ = "*"
+python-barcode = {extras = ["images"], version = "*"}
+reportlab = "*"
+pillow = "*"
+django = "<5.3,>=5.2"
+
+[dev-packages]
+
+[requires]
+python_version = "3.14"

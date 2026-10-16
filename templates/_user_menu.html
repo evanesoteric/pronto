@@ -1,0 +1,24 @@
+{# templates/_user_menu.html #}
+<div class="dropdown">
+  <button class="btn btn-sm btn-light dropdown-toggle" type="button"
+          data-bs-toggle="dropdown" aria-expanded="false">
+    {{ request.user.username }}
+    {% if request.user.role %}
+      <span class="badge bg-secondary ms-1">{{ request.user.role }}</span>
+    {% endif %}
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li>
+      <a class="dropdown-item" href="/admin/core/user/{{ request.user.id }}/change/">
+        Profile
+      </a>
+    </li>
+    <li><hr class="dropdown-divider"></li>
+    <li>
+      <form method="post" action="{% url 'logout' %}" class="m-0">
+        {% csrf_token %}
+        <button type="submit" class="dropdown-item">Log out</button>
+      </form>
+    </li>
+  </ul>
+</div>

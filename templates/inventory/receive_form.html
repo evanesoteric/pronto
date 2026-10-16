@@ -1,0 +1,164 @@
+{# templates/inventory/receive_form.html #}
+{% extends "base.html" %}
+
+{% block title %}Receive Shipment — Pronto{% endblock %}
+
+{% block breadcrumbs %}
+<a href="{% url 'inventory:lots_list' %}" class="text-decoration-none text-muted">Inventory</a>
+<span class="text-muted mx-1">/</span>
+<strong>Receive Shipment</strong>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-lg-9">
+
+    {% include "barcodes/_scanner.html" with scanner_hint="Scan an item barcode to add a line" %}
+
+    <form method="post" id="receive-form">
+      {% csrf_token %}
+
+      <div id="lines-container">
+        <!-- Lines will be inserted here -->
+      </div>
+
+      <div class="d-flex gap-2 mb-4">
+        <button type="button" class="btn btn-outline-secondary" id="add-line">
+          + Add line
+        </button>
+      </div>
+
+      <div class="card mb-3">
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-6">
+              <label class="form-label small text-muted">Facility</label>
+              <div class="form-control-plaintext">
+                <strong>{{ facility.name }}</strong>
+                <span class="badge bg-secondary ms-1">{{ facility.code }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary btn-lg">
+          ⬇️ Receive
+        </button>
+        <a href="{% url 'inventory:lots_list' %}" class="btn btn-outline-secondary btn-lg">
+          Cancel
+        </a>
+      </div>
+    </form>
+
+  </div>
+</div>
+
+<!-- Template for a new line — hidden, cloned by JS -->
+<template id="line-template">
+  <div class="receive-line" data-line-index="__INDEX__">
+    <div class="row g-2 align-items-end">
+      <div class="col-md-3">
+        <label class="form-label small">Item</label>
+        <select name="line-__INDEX__-item_id" class="form-select" required>
+          <option value="">— select —</option>
+          {% for item in items %}
+          <option value="{{ item.pk }}">{{ item.sku }} — {{ item.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small">Lot number</label>
+        <input type="text" name="line-__INDEX__-lot_number"
+               class="form-control font-monospace" required
+               placeholder="e.g. SUGAR-2026-10-15A">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label small">Quantity</label>
+        <input type="number" step="0.001" min="0.001" name="line-__INDEX__-quantity"
+               class="form-control" required>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label small">Unit cost</label>
+        <input type="number" step="0.0001" min="0" name="line-__INDEX__-unit_cost"
+               class="form-control" placeholder="0.0000">
+      </div>
+      <div class="col-md-1">
+        <label class="form-label small">Ref</label>
+        <input type="text" name="line-__INDEX__-reference"
+               class="form-control" placeholder="PO #">
+      </div>
+      <div class="col-md-1 text-end">
+        <button type="button" class="btn btn-outline-danger btn-sm remove-line"
+                title="Remove line">×</button>
+      </div>
+    </div>
+  </div>
+</template>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+  const container = document.getElementById("lines-container");
+  const template = document.getElementById("line-template");
+  const addBtn = document.getElementById("add-line");
+  let nextIndex = 0;
+
+  function addLine() {
+    const html = template.innerHTML.replace(/__INDEX__/g, nextIndex);
+    const wrap = document.createElement("div");
+    wrap.innerHTML = html;
+    const node = wrap.firstElementChild;
+    container.appendChild(node);
+    nextIndex += 1;
+
+    // Focus the first field of the new line
+    const firstField = node.querySelector("select, input");
+    if (firstField) firstField.focus();
+  }
+
+  addBtn.addEventListener("click", addLine);
+
+  container.addEventListener("click", (e) => {
+    if (e.target.classList.contains("remove-line")) {
+      e.target.closest(".receive-line").remove();
+    }
+  });
+
+  // Listen for scanned barcodes
+  document.addEventListener("barcode:scan", (e) => {
+    const token = e.detail.token;
+    fetch("/api/barcodes/scan/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken]").value,
+      },
+      body: JSON.stringify({ token }),
+    })
+    .then((r) => r.json())
+    .then((data) => {
+      // If it's an item barcode, pre-select in a new line
+      if (data.target_type === "Item") {
+        addLine();
+        const lastLine = container.lastElementChild;
+        const select = lastLine.querySelector("select");
+        select.value = data.target_id;
+        lastLine.querySelector("input[name$='-lot_number']").focus();
+      } else if (data.target_type === "InventoryLot") {
+        // Lot exists — tell the user
+        alert("That lot already exists. Use the lot page to add stock.");
+      } else {
+        alert("Scanned: " + data.display);
+      }
+    })
+    .catch((err) => alert("Lookup failed: " + err));
+  });
+
+  // Start with one line
+  addLine();
+})();
+</script>
+{% endblock %}

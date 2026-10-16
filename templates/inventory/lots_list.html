@@ -1,0 +1,78 @@
+{# templates/inventory/lots_list.html #}
+{% extends "base.html" %}
+
+{% block title %}Inventory — Pronto{% endblock %}
+
+{% block breadcrumbs %}
+<strong>Inventory</strong>
+{% if facility %}<span class="text-muted ms-2">— {{ facility.name }}</span>{% endif %}
+{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'inventory:receive_form' %}" class="btn btn-sm btn-primary">
+  ⬇️ Receive Shipment
+</a>
+{% endblock %}
+
+{% block content %}
+<form method="get" class="row g-2 mb-3">
+  <div class="col-md-6">
+    <input type="text" name="q" value="{{ q }}" class="form-control"
+           placeholder="Search by lot, SKU, or item name...">
+  </div>
+  <div class="col-auto">
+    <button class="btn btn-outline-secondary">Search</button>
+  </div>
+  <div class="col-auto">
+    <div class="form-check form-switch mt-2">
+      <input type="checkbox" class="form-check-input" id="show_zero"
+             name="show_zero" value="1" {% if show_zero %}checked{% endif %}
+             onchange="this.form.submit()">
+      <label class="form-check-label" for="show_zero">Show empty lots</label>
+    </div>
+  </div>
+</form>
+
+<div class="card">
+  <table class="table table-hover mb-0">
+    <thead class="table-light">
+      <tr>
+        <th>Item</th>
+        <th>Lot</th>
+        <th>Facility</th>
+        <th class="text-end">On Hand</th>
+        <th class="text-end">Unit Cost</th>
+        <th>Received</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for lot in lots %}
+      <tr>
+        <td>
+          <a href="{% url 'inventory:lot_detail' lot.pk %}">
+            <strong>{{ lot.item.sku }}</strong>
+          </a>
+          <div class="small text-muted">{{ lot.item.name }}</div>
+        </td>
+        <td class="font-monospace">{{ lot.lot_number }}</td>
+        <td><span class="badge bg-secondary">{{ lot.facility.code }}</span></td>
+        <td class="text-end">{{ lot.quantity_on_hand|floatformat:3 }} {{ lot.item.unit }}</td>
+        <td class="text-end">${{ lot.unit_cost|floatformat:4 }}</td>
+        <td class="small text-muted">
+          {{ lot.received_at|date:"M j, Y"|default:"—" }}
+        </td>
+        <td class="text-end">
+          <a href="/api/barcodes/labels/lot/{{ lot.pk }}/" target="_blank"
+             class="btn btn-sm btn-outline-secondary" title="Print label">🖨️</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7" class="text-center text-muted py-4">
+        No lots. <a href="{% url 'inventory:receive_form' %}">Receive a shipment</a>.
+      </td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

@@ -1,0 +1,32 @@
+{# templates/_sidebar.html #}
+<aside class="panel-sidebar">
+  <div class="brand">🍺 Pronto</div>
+
+  <nav>
+    <a href="{% url 'core:dashboard' %}"
+       class="{% if request.resolver_match.view_name == 'core:dashboard' %}active{% endif %}">
+      📊 Dashboard
+    </a>
+
+    <div class="nav-section">Operations</div>
+
+    <a href="{% url 'inventory:lots_list' %}"
+       class="{% if 'inventory:lot' in request.resolver_match.view_name %}active{% endif %}">
+      📦 Inventory
+    </a>
+    <a href="{% url 'inventory:receive_form' %}"
+       class="{% if request.resolver_match.view_name == 'inventory:receive_form' %}active{% endif %}">
+      ⬇️ Receive Shipment
+    </a>
+
+    <div class="nav-section">Tools</div>
+
+    <a href="#">🔍 Scan Anything</a>
+    <a href="#">🏷️ Print Queue</a>
+
+    {% if request.user.role == 'admin' or request.user.is_superuser %}
+    <div class="nav-section">Admin</div>
+    <a href="/admin/">⚙️ Django Admin</a>
+    {% endif %}
+  </nav>
+</aside>

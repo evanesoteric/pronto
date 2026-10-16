@@ -1,0 +1,133 @@
+/* static/css/panel.css */
+
+:root {
+    --panel-sidebar-width: 240px;
+    --panel-sidebar-bg: #1a1d21;
+    --panel-sidebar-fg: #c9cdd3;
+    --panel-sidebar-hover-bg: #2a2e33;
+    --panel-sidebar-active-bg: #0d6efd;
+    --panel-accent: #0d6efd;
+}
+
+body.panel {
+    padding: 0;
+    background: #f4f5f7;
+}
+
+.panel-layout {
+    display: flex;
+    min-height: 100vh;
+}
+
+.panel-sidebar {
+    width: var(--panel-sidebar-width);
+    background: var(--panel-sidebar-bg);
+    color: var(--panel-sidebar-fg);
+    flex-shrink: 0;
+    overflow-y: auto;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+}
+
+.panel-sidebar .brand {
+    padding: 1rem 1.25rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #fff;
+    border-bottom: 1px solid #2a2e33;
+}
+
+.panel-sidebar .nav-section {
+    padding: 0.75rem 1.25rem 0.25rem;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #6b7280;
+}
+
+.panel-sidebar a {
+    display: block;
+    padding: 0.5rem 1.25rem;
+    color: var(--panel-sidebar-fg);
+    text-decoration: none;
+    font-size: 0.9rem;
+}
+
+.panel-sidebar a:hover {
+    background: var(--panel-sidebar-hover-bg);
+    color: #fff;
+}
+
+.panel-sidebar a.active {
+    background: var(--panel-sidebar-active-bg);
+    color: #fff;
+}
+
+.panel-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.panel-topbar {
+    background: #fff;
+    border-bottom: 1px solid #e5e7eb;
+    padding: 0.75rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.panel-content {
+    padding: 1.5rem;
+    flex: 1;
+}
+
+.kpi-card {
+    background: #fff;
+    border-radius: 0.5rem;
+    padding: 1rem 1.25rem;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+    height: 100%;
+}
+
+.kpi-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #6b7280;
+}
+
+.kpi-value {
+    font-size: 1.75rem;
+    font-weight: 600;
+    margin-top: 0.25rem;
+}
+
+.receive-line {
+    background: #fff;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+}
+
+.scan-banner {
+    background: #fff;
+    border: 2px dashed #d1d5db;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    text-align: center;
+    margin-bottom: 1rem;
+}
+
+.scan-banner video {
+    width: 100%;
+    max-width: 320px;
+    border-radius: 0.5rem;
+}

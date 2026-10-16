@@ -1,0 +1,203 @@
+{# templates/barcodes/_scanner.html #}
+{# Reusable barcode scanner component.                                    #}
+{#                                                                       #}
+{# Emits a `barcode:scan` DOM event on the document whenever a token is  #}
+{# captured, via:                                                        #}
+{#   - A USB scan gun (types the token + presses Enter)                 #}
+{#   - The device camera (via BarcodeDetector API, when available)      #}
+{#   - Manual typing + Enter / "Lookup" button                          #}
+{#                                                                       #}
+{# Listen for it with:                                                   #}
+{#   document.addEventListener("barcode:scan", (e) => {                  #}
+{#     console.log(e.detail.token);                                       #}
+{#   });                                                                  #}
+{#                                                                       #}
+
+<div class="scan-banner" id="scanner-root">
+  <div class="mb-2">
+    <span class="text-muted small">
+      📷 Scan a barcode or type the token below
+    </span>
+  </div>
+
+  <div class="input-group mb-2">
+    <span class="input-group-text">🔍</span>
+    <input type="text"
+           id="scanner-manual-input"
+           class="form-control font-monospace"
+           placeholder="Scan or type token…"
+           autocomplete="off"
+           autocapitalize="off"
+           autocorrect="off"
+           spellcheck="false">
+    <button type="button" class="btn btn-primary" id="scanner-lookup-btn">
+      Lookup
+    </button>
+  </div>
+
+  <button type="button" class="btn btn-sm btn-outline-secondary" id="scanner-camera-toggle">
+    📷 Use camera
+  </button>
+
+  <div id="scanner-camera-wrap" style="display: none;" class="mt-2">
+    <video id="scanner-video" playsinline autoplay muted
+           style="width: 100%; max-width: 320px; border-radius: 8px; background: #000;">
+    </video>
+    <div class="small text-muted mt-1">Point the camera at a Code 128 barcode</div>
+  </div>
+
+  <div id="scanner-status" class="small mt-2" style="min-height: 1.2em;"></div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // Guard against double-initialization if the component is included twice
+  if (window.__scannerInitialized) return;
+  window.__scannerInitialized = true;
+
+  const root = document.getElementById("scanner-root");
+  if (!root) return;
+
+  const input = document.getElementById("scanner-manual-input");
+  const lookupBtn = document.getElementById("scanner-lookup-btn");
+  const cameraToggle = document.getElementById("scanner-camera-toggle");
+  const cameraWrap = document.getElementById("scanner-camera-wrap");
+  const video = document.getElementById("scanner-video");
+  const status = document.getElementById("scanner-status");
+
+  let stream = null;
+  let detector = null;
+  let rafHandle = null;
+
+  function setStatus(text, kind) {
+    status.textContent = text || "";
+    status.className = "small mt-2 " + (
+      kind === "error" ? "text-danger"
+      : kind === "ok" ? "text-success"
+      : "text-muted"
+    );
+  }
+
+  function emitScan(token) {
+    token = (token || "").trim();
+    if (!token) return;
+
+    // Visual confirmation — the actual handler is elsewhere
+    setStatus("Scanned: " + token, "ok");
+
+    // Dispatch a CustomEvent that bubbles, so any parent can catch it
+    const evt = new CustomEvent("barcode:scan", {
+      detail: { token: token },
+      bubbles: true,
+    });
+    document.dispatchEvent(evt);
+  }
+
+  // --- USB scanner / manual typing: Enter triggers lookup ---
+  input.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      emitScan(input.value);
+      input.value = "";
+      input.focus();
+    }
+  });
+
+  lookupBtn.addEventListener("click", function () {
+    emitScan(input.value);
+    input.value = "";
+    input.focus();
+  });
+
+  // --- Camera scan (BarcodeDetector where available) ---
+  async function startCamera() {
+    if (!("BarcodeDetector" in window)) {
+      setStatus(
+        "Camera scanning is not supported in this browser. Use a USB scanner or type the token.",
+        "error"
+      );
+      return;
+    }
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      setStatus("Camera access is not available in this browser.", "error");
+      return;
+    }
+
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "environment" },
+      });
+    } catch (err) {
+      setStatus("Camera permission denied or unavailable: " + err.message, "error");
+      return;
+    }
+
+    video.srcObject = stream;
+    cameraWrap.style.display = "block";
+    cameraToggle.textContent = "⏹ Stop camera";
+    setStatus("Camera active — scanning…");
+
+    // Formats: our labels use code_128, but tolerate others
+    const supported = await BarcodeDetector.getSupportedFormats();
+    const formats = ["code_128"].filter(function (f) {
+      return supported.indexOf(f) !== -1;
+    });
+    if (formats.length === 0) {
+      // Fall back to all supported formats
+      formats.push.apply(formats, supported);
+    }
+    detector = new BarcodeDetector({ formats: formats });
+
+    const tick = async function () {
+      if (!stream) return;
+      try {
+        if (video.readyState === video.HAVE_ENOUGH_DATA) {
+          const codes = await detector.detect(video);
+          if (codes && codes.length > 0) {
+            emitScan(codes[0].rawValue);
+            stopCamera();
+            return;
+          }
+        }
+      } catch (err) {
+        // Ignore transient detection errors
+      }
+      rafHandle = requestAnimationFrame(tick);
+    };
+    tick();
+  }
+
+  function stopCamera() {
+    if (rafHandle) {
+      cancelAnimationFrame(rafHandle);
+      rafHandle = null;
+    }
+    if (stream) {
+      stream.getTracks().forEach(function (t) { t.stop(); });
+      stream = null;
+    }
+    video.srcObject = null;
+    cameraWrap.style.display = "none";
+    cameraToggle.textContent = "📷 Use camera";
+    setStatus("");
+  }
+
+  cameraToggle.addEventListener("click", function () {
+    if (stream) {
+      stopCamera();
+    } else {
+      startCamera();
+    }
+  });
+
+  // Auto-focus the manual input when the page loads — USB guns type into
+  // whatever is focused, so this makes the flow seamless.
+  if (input) {
+    // Slight delay to let the page settle; also helps mobile not pop the
+    // keyboard immediately in a disruptive way.
+    setTimeout(function () { input.focus(); }, 150);
+  }
+})();
+</script>

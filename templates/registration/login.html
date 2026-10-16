@@ -1,0 +1,46 @@
+{# templates/registration/login.html #}
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sign in — Pronto</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="{% static 'css/panel.css' %}" rel="stylesheet">
+</head>
+<body class="bg-light">
+  <div class="d-flex align-items-center justify-content-center" style="min-height: 100vh;">
+    <div class="card shadow-sm" style="width: 100%; max-width: 400px;">
+      <div class="card-body p-4">
+        <h1 class="h4 mb-4 text-center">🍺 Pronto</h1>
+        <h2 class="h6 text-muted text-center mb-4">Sign in to continue</h2>
+
+        {% if form.errors %}
+          <div class="alert alert-danger">Invalid username or password.</div>
+        {% endif %}
+
+        {% if next %}
+          <div class="alert alert-info">Please sign in to access that page.</div>
+        {% endif %}
+
+        <form method="post">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label for="id_username" class="form-label">Username</label>
+            <input type="text" name="username" id="id_username"
+                   class="form-control" autofocus autocomplete="username" required>
+          </div>
+          <div class="mb-3">
+            <label for="id_password" class="form-label">Password</label>
+            <input type="password" name="password" id="id_password"
+                   class="form-control" autocomplete="current-password" required>
+          </div>
+          <input type="hidden" name="next" value="{{ next }}">
+          <button type="submit" class="btn btn-primary w-100">Sign in</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
