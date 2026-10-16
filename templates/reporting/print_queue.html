@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% block title %}Print Queue — Pronto{% endblock %}
+
+{% block breadcrumbs %}
+<strong>Print Queue</strong>
+<span class="badge bg-secondary ms-2">{{ pending_count }} pending</span>
+{% endblock %}
+
+{% block content %}
+
+{# --------------------------------------------------------------- #}
+{# Pending #}
+{# --------------------------------------------------------------- #}
+<h5 class="text-muted mb-2">Pending ({{ pending_count }})</h5>
+<div class="card mb-4">
+  <table class="table table-sm mb-0">
+    <thead class="table-light">
+      <tr>
+        <th>ID</th>
+        <th>Target</th>
+        <th>Token</th>
+        <th>Copies</th>
+        <th>Created</th>
+        <th class="text-end">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in pending %}
+      <tr>
+        <td class="text-muted">#{{ row.job.pk }}</td>
+        <td>
+          <strong>{{ row.display }}</strong>
+          <div class="small text-muted">{{ row.kind }}</div>
+        </td>
+        <td class="font-monospace small">{{ row.token }}</td>
+        <td>{{ row.job.copies }}×</td>
+        <td class="small text-muted">{{ row.job.created_at|date:"M j, H:i" }}</td>
+        <td class="text-end">
+          <a href="{% url 'reporting:print_job_pdf' row.job.pk %}"
+             target="_blank" class="btn btn-sm btn-primary">
+            🖨️ Print
+          </a>
+          <form method="post" action="{% url 'reporting:print_job_cancel' row.job.pk %}"
+                class="d-inline"
+                onsubmit="return confirm('Cancel this print job?');">
+            {% csrf_token %}
+            <button class="btn btn-sm btn-outline-danger">✕</button>
+          </form>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="6" class="text-center text-muted py-4">
+          No pending print jobs. Labels queue up automatically when
+          you receive stock or package a batch.
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{# --------------------------------------------------------------- #}
+{# Recently printed #}
+{# --------------------------------------------------------------- #}
+<h5 class="text-muted mb-2">Recently printed</h5>
+<div class="card mb-4">
+  <table class="table table-sm mb-0">
+    <thead class="table-light">
+      <tr>
+        <th>ID</th>
+        <th>Target</th>
+        <th>Token</th>
+        <th>Printed</th>
+        <th class="text-end"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in printed %}
+      <tr>
+        <td class="text-muted">#{{ row.job.pk }}</td>
+        <td>
+          <strong>{{ row.display }}</strong>
+          <div class="small text-muted">{{ row.kind }}</div>
+        </td>
+        <td class="font-monospace small">{{ row.token }}</td>
+        <td class="small text-muted">
+          {{ row.job.printed_at|date:"M j, H:i"|default:"—" }}
+        </td>
+        <td class="text-end">
+          <a href="{% url 'reporting:print_job_pdf' row.job.pk %}"
+             target="_blank" class="btn btn-sm btn-outline-secondary">
+            Reprint
+          </a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="5" class="text-center text-muted py-4">Nothing printed yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{# --------------------------------------------------------------- #}
+{# Failed #}
+{# --------------------------------------------------------------- #}
+{% if failed %}
+<h5 class="text-muted mb-2">Failed</h5>
+<div class="card">
+  <table class="table table-sm mb-0">
+    <thead class="table-light">
+      <tr>
+        <th>ID</th>
+        <th>Target</th>
+        <th>Error</th>
+        <th class="text-end"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in failed %}
+      <tr>
+        <td class="text-muted">#{{ row.job.pk }}</td>
+        <td>{{ row.display }}</td>
+        <td class="small text-danger">{{ row.job.error|truncatechars:80 }}</td>
+        <td class="text-end">
+          <a href="{% url 'reporting:print_job_pdf' row.job.pk %}"
+             target="_blank" class="btn btn-sm btn-outline-secondary">
+            Retry
+          </a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{% endblock %}

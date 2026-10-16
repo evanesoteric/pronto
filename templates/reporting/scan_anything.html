@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Scan Anything — Pronto{% endblock %}
+
+{% block breadcrumbs %}<strong>Scan Anything</strong>{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-6">
+
+    {% include "barcodes/_scanner.html" %}
+
+    {# Invisible form that the scanner event triggers a submit on #}
+    <form method="post" id="scan-form" class="d-none">
+      {% csrf_token %}
+      <input type="hidden" name="token" id="scan-token-input">
+    </form>
+
+    {% if error %}
+    <div class="alert alert-danger mt-3">
+      <strong>Lookup failed:</strong> {{ error }}
+    </div>
+    {% endif %}
+
+    {% if resolved %}
+    <div class="card mt-3 border-primary">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start">
+          <div>
+            <div class="small text-muted text-uppercase">{{ resolved.kind }}</div>
+            <h4 class="mb-1">{{ resolved.title }}</h4>
+            <div class="text-muted mb-3">{{ resolved.subtitle }}</div>
+          </div>
+          <span class="badge bg-primary">Resolved</span>
+        </div>
+
+        {% if resolved.meta %}
+        <table class="table table-sm mb-3">
+          <tbody>
+            {% for label, value in resolved.meta %}
+            <tr>
+              <th width="140" class="text-muted">{{ label }}</th>
+              <td>{{ value }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% endif %}
+
+        <div class="d-flex gap-2 flex-wrap">
+          {% for action in resolved.actions %}
+          <a href="{{ action.url }}" class="btn btn-primary" target="_blank">
+            {{ action.label }}
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="text-muted small mt-3">
+      <strong>Tip:</strong> any label printed by Pronto will resolve here.
+      Try scanning a lot, batch, order, or item barcode.
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+  document.addEventListener("barcode:scan", function(e) {
+    var token = (e.detail && e.detail.token) || "";
+    if (!token) return;
+    document.getElementById("scan-token-input").value = token;
+    document.getElementById("scan-form").submit();
+  });
+})();
+</script>
+{% endblock %}

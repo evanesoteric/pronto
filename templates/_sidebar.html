@@ -45,11 +45,13 @@
 
     <div class="nav-section">Tools</div>
 
-    <a href="#" class="disabled" style="opacity: 0.4; pointer-events: none;">
-      🔍 Scan Anything <span class="badge bg-secondary ms-1">soon</span>
+    <a href="{% url 'reporting:scan_anything' %}"
+       class="{% if request.resolver_match.view_name == 'reporting:scan_anything' %}active{% endif %}">
+      🔍 Scan Anything
     </a>
-    <a href="#" class="disabled" style="opacity: 0.4; pointer-events: none;">
-      🏷️ Print Queue <span class="badge bg-secondary ms-1">soon</span>
+    <a href="{% url 'reporting:print_queue' %}"
+       class="{% if 'reporting:print' in request.resolver_match.view_name %}active{% endif %}">
+      🏷️ Print Queue
     </a>
 
     {% if request.user.role == 'admin' or request.user.is_superuser %}
