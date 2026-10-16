@@ -34,6 +34,14 @@ class InsufficientStock(ValidationError):
     def __str__(self):
         return " ".join(self.messages) if hasattr(self, "messages") else super().__str__()
 
+
+class ConversionError(ValidationError):
+    """Raised when a unit conversion can't be performed."""
+
+    def __str__(self):
+        return " ".join(self.messages) if hasattr(self, "messages") else super().__str__()
+
+
 # ---------------------------------------------------------------------------
 # Receiving
 # ---------------------------------------------------------------------------
@@ -294,7 +302,7 @@ def convert_quantity(
     if inverse:
         return (quantity / inverse.factor).quantize(Decimal("0.000001"))
 
-    raise ValidationError(
+    raise ConversionError(
         f"No conversion defined for {item.sku} from {from_unit.code} "
         f"to {to_unit.code}."
     )
