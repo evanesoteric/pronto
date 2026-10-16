@@ -64,9 +64,7 @@ class Order(TimeStampedModel):
 
 
 class OrderLine(TimeStampedModel):
-    order = models.ForeignKey(
-        Order, on_delete=models.CASCADE, related_name="lines",
-    )
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="lines")
     item = models.ForeignKey(Item, on_delete=models.PROTECT)
     quantity = models.DecimalField(max_digits=12, decimal_places=3)
     unit_price = models.DecimalField(max_digits=10, decimal_places=2)
@@ -85,6 +83,10 @@ class OrderLine(TimeStampedModel):
     @property
     def remaining_to_ship(self):
         return self.quantity - self.allocated_quantity
+
+    @property
+    def total(self):
+        return (self.quantity * self.unit_price).quantize(Decimal("0.01"))
 
 
 class StockAllocation(TimeStampedModel):

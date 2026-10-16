@@ -1,9 +1,113 @@
+# apps/inventory/models.py
 from decimal import Decimal
+
+from django.core.exceptions import ValidationError
 from django.db import models
-from django.db.models import Sum, F
+from django.db.models import Sum, F, Q
 
 from apps.core.models import Facility, TimeStampedModel
 
+
+# ---------------------------------------------------------------------------
+# Units of measure
+# ---------------------------------------------------------------------------
+
+class UnitDimension(models.TextChoices):
+    MASS = "mass", "Mass"
+    VOLUME = "volume", "Volume"
+    COUNT = "count", "Count"
+    PACKAGING = "packaging", "Packaging"
+
+
+class UnitOfMeasure(TimeStampedModel):
+    """
+    A unit like 'kg', 'L', 'keg'. Every item is stocked and sold in
+    exactly one unit.
+
+    Base units (is_base=True) are the canonical reference for a
+    dimension. Exactly one per dimension is enforced.
+    """
+    code = models.CharField(max_length=16, unique=True)
+    name = models.CharField(max_length=80)
+    dimension = models.CharField(
+        max_length=16, choices=UnitDimension.choices,
+    )
+    is_base = models.BooleanField(
+        default=False,
+        help_text="Base unit for its dimension. Exactly one per dimension.",
+    )
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["dimension", "code"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["dimension"],
+                condition=models.Q(is_base=True),
+                name="unique_base_unit_per_dimension",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.code} ({self.get_dimension_display()})"
+
+
+class UnitConversion(TimeStampedModel):
+    """
+    1 from_unit = factor to_unit, for a specific item.
+
+    Only needed when an item's stocked unit differs from a unit a
+    report or rollup wants to reason in. E.g., a keg item with a
+    conversion to liters so total volume can be summed across items.
+    """
+    item = models.ForeignKey(
+        "inventory.Item", on_delete=models.CASCADE,
+        related_name="unit_conversions",
+    )
+    from_unit = models.ForeignKey(
+        UnitOfMeasure, on_delete=models.PROTECT,
+        related_name="conversions_from",
+    )
+    to_unit = models.ForeignKey(
+        UnitOfMeasure, on_delete=models.PROTECT,
+        related_name="conversions_to",
+    )
+    factor = models.DecimalField(max_digits=16, decimal_places=6)
+
+    class Meta:
+        unique_together = ("item", "from_unit", "to_unit")
+        constraints = [
+            models.CheckConstraint(
+                check=Q(factor__gt=0),
+                name="conversion_factor_positive",
+            ),
+        ]
+
+    def __str__(self):
+        return (
+            f"{self.item.sku}: 1 {self.from_unit.code} "
+            f"= {self.factor} {self.to_unit.code}"
+        )
+
+    def clean(self):
+        """
+        Refuse conversions only when both units are physical AND
+        their dimensions differ. Packaging <-> physical and
+        packaging <-> packaging are always allowed.
+        """
+        from_d = self.from_unit.dimension
+        to_d = self.to_unit.dimension
+        physical = {"mass", "volume", "count"}
+        if from_d in physical and to_d in physical and from_d != to_d:
+            raise ValidationError(
+                "Cannot convert between different physical dimensions "
+                f"({from_d} vs {to_d})."
+            )
+
+
+# ---------------------------------------------------------------------------
+# Items
+# ---------------------------------------------------------------------------
 
 class ItemCategory(models.TextChoices):
     MALT = "malt", "Malt"
@@ -34,7 +138,11 @@ class Item(TimeStampedModel):
     sku = models.CharField(max_length=50, unique=True)
     name = models.CharField(max_length=200)
     category = models.CharField(max_length=20, choices=ItemCategory.choices)
-    unit = models.CharField(max_length=16, help_text="kg, L, each, etc.")
+    unit = models.ForeignKey(
+        UnitOfMeasure, on_delete=models.PROTECT,
+        related_name="items",
+        help_text="The unit this item is stocked and sold in.",
+    )
     reorder_point = models.DecimalField(
         max_digits=12, decimal_places=3, default=Decimal("0"),
     )
@@ -53,6 +161,10 @@ class Item(TimeStampedModel):
     def __str__(self):
         return f"{self.sku} — {self.name}"
 
+
+# ---------------------------------------------------------------------------
+# Lots and the ledger
+# ---------------------------------------------------------------------------
 
 class InventoryLotQuerySet(models.QuerySet):
     def for_facility(self, facility):
@@ -136,7 +248,6 @@ class StockMovement(models.Model):
     )
     reason = models.CharField(max_length=32, choices=MovementReason.choices)
     reference = models.CharField(max_length=128, blank=True)
-
     batch = models.ForeignKey(
         "production.Batch", null=True, blank=True,
         on_delete=models.SET_NULL, related_name="movements",
@@ -145,13 +256,6 @@ class StockMovement(models.Model):
         "sales.OrderLine", null=True, blank=True,
         on_delete=models.SET_NULL, related_name="movements",
     )
-
-    performed_by = models.ForeignKey(
-        "core.User", on_delete=models.PROTECT, related_name="stock_movements",
-    )
-    note = models.TextField(blank=True)
-    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
-
     performed_by = models.ForeignKey(
         "core.User", on_delete=models.PROTECT, related_name="stock_movements",
     )
@@ -170,6 +274,6 @@ class StockMovement(models.Model):
     def __str__(self):
         sign = "+" if self.delta >= 0 else ""
         return (
-            f"{sign}{self.delta} {self.lot.item.unit} "
+            f"{sign}{self.delta} {self.lot.item.unit.code} "
             f"{self.lot.item.sku} ({self.reason})"
         )

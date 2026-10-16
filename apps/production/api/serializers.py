@@ -21,12 +21,13 @@ class TankSerializer(serializers.ModelSerializer):
 class RecipeIngredientSerializer(serializers.ModelSerializer):
     item_sku = serializers.CharField(source="item.sku", read_only=True)
     item_name = serializers.CharField(source="item.name", read_only=True)
-    item_unit = serializers.CharField(source="item.unit", read_only=True)
+    item_unit = serializers.CharField(source="item.unit.code", read_only=True)
 
     class Meta:
         model = RecipeIngredient
         fields = [
-            "id", "recipe", "item", "item_sku", "item_name", "item_unit",
+            "id", "recipe", "item",
+            "item_sku", "item_name", "item_unit",
             "quantity", "stage", "notes",
         ]
 
@@ -102,7 +103,7 @@ class PackageBatchSerializer(serializers.Serializer):
 class BatchConsumptionSerializer(serializers.Serializer):
     lot__item__sku = serializers.CharField()
     lot__item__name = serializers.CharField()
-    lot__item__unit = serializers.CharField()
+    lot__item__unit__code = serializers.CharField()
     total = serializers.DecimalField(max_digits=14, decimal_places=3)
 
 

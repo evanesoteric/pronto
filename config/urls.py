@@ -26,6 +26,8 @@ urlpatterns = [
 
     # Panel
     path("inventory/", include("apps.inventory.web_urls")),
+    path("production/", include("apps.production.web_urls")),
+    path("sales/", include("apps.sales.web_urls")),
     path("", include("apps.core.web_urls")),
 ]
 

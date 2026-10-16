@@ -21,8 +21,10 @@ from django.utils import timezone
 
 from apps.core.models import User
 from apps.barcodes.signals import emit
+
 from .models import (
-    InventoryLot, Item, MovementReason, StockMovement,
+    InventoryLot, Item, ItemCategory, MovementReason,
+    StockMovement, UnitConversion, UnitOfMeasure,
 )
 
 
@@ -242,6 +244,60 @@ def adjust_stock(
     )
     _apply_movement_to_lot_cache(lot, delta)
     return movement
+
+
+# ---------------------------------------------------------------------------
+# Unit conversion
+# ---------------------------------------------------------------------------
+
+def convert_quantity(
+    *,
+    item: Item,
+    quantity: Decimal,
+    from_unit: UnitOfMeasure,
+    to_unit: UnitOfMeasure,
+) -> Decimal:
+    """
+    Convert a quantity of an item from one unit to another.
+
+    Uses UnitConversion rows. Tries a direct conversion first, then
+    the inverse. Raises ValidationError if no path exists.
+
+    Dimension rules:
+      - Same dimension: allowed
+      - Packaging <-> physical (mass/volume/count): allowed
+      - Physical <-> different physical: refused
+    """
+    if from_unit.pk == to_unit.pk:
+        return quantity
+
+    from_d = from_unit.dimension
+    to_d = to_unit.dimension
+
+    # Only refuse when both are physical and different.
+    physical = {"mass", "volume", "count"}
+    if from_d in physical and to_d in physical and from_d != to_d:
+        raise ValidationError(
+            f"Cannot convert {from_unit.code} to {to_unit.code}: "
+            f"different physical dimensions ({from_d} vs {to_d})."
+        )
+
+    direct = UnitConversion.objects.filter(
+        item=item, from_unit=from_unit, to_unit=to_unit,
+    ).first()
+    if direct:
+        return (quantity * direct.factor).quantize(Decimal("0.000001"))
+
+    inverse = UnitConversion.objects.filter(
+        item=item, from_unit=to_unit, to_unit=from_unit,
+    ).first()
+    if inverse:
+        return (quantity / inverse.factor).quantize(Decimal("0.000001"))
+
+    raise ValidationError(
+        f"No conversion defined for {item.sku} from {from_unit.code} "
+        f"to {to_unit.code}."
+    )
 
 
 # ---------------------------------------------------------------------------

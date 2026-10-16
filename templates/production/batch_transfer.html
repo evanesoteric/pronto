@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Transfer {{ batch.batch_number }} — Pronto{% endblock %}
+
+{% block breadcrumbs %}
+<a href="{% url 'production:batches_list' %}" class="text-decoration-none text-muted">Batches</a>
+<span class="text-muted mx-1">/</span>
+<a href="{% url 'production:batch_detail' batch.pk %}" class="text-decoration-none text-muted">{{ batch.batch_number }}</a>
+<span class="text-muted mx-1">/</span>
+<strong>Transfer</strong>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-6">
+    <div class="card">
+      <div class="card-body">
+        <h4 class="mb-3">Transfer to Tank</h4>
+        <p class="text-muted">Batch {{ batch.batch_number }} — {{ batch.recipe.name }}</p>
+
+        <form method="post">
+          {% csrf_token %}
+
+          <div class="mb-3">
+            <label class="form-label">Tank</label>
+            <select name="tank_id" class="form-select" required>
+              <option value="">— select tank —</option>
+              {% for t in tanks %}
+              <option value="{{ t.pk }}" {% if batch.tank_id == t.pk %}selected{% endif %}>
+                {{ t.name }} — {{ t.capacity_liters|floatformat:0 }} L ({{ t.get_status_display }})
+              </option>
+              {% endfor %}
+            </select>
+            {% if not tanks %}
+            <div class="form-text text-danger">
+              No tanks available. All are currently fermenting or conditioning.
+            </div>
+            {% endif %}
+          </div>
+
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary" {% if not tanks %}disabled{% endif %}>
+              Transfer
+            </button>
+            <a href="{% url 'production:batch_detail' batch.pk %}" class="btn btn-outline-secondary">Cancel</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

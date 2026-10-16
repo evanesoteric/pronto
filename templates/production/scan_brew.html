@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}Scan Brew — {{ batch.batch_number }}{% endblock %}
+
+{% block breadcrumbs %}
+<a href="{% url 'production:batches_list' %}" class="text-decoration-none text-muted">Batches</a>
+<span class="text-muted mx-1">/</span>
+<a href="{% url 'production:batch_detail' batch.pk %}" class="text-decoration-none text-muted">{{ batch.batch_number }}</a>
+<span class="text-muted mx-1">/</span>
+<strong>Scan Brew</strong>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-6">
+    <div class="card mb-3">
+      <div class="card-body">
+        <h5 class="mb-1">{{ batch.batch_number }}</h5>
+        <div class="text-muted">{{ batch.recipe.name }} — {{ batch.planned_volume_liters|floatformat:0 }} L planned</div>
+      </div>
+    </div>
+
+    {% include "barcodes/_scanner.html" %}
+
+    <div id="consumption-log" class="mt-3"></div>
+
+    <div class="card mt-3">
+      <div class="card-body">
+        <a href="{% url 'production:batch_detail' batch.pk %}"
+           class="btn btn-outline-secondary w-100">Back to batch</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+  const log = document.getElementById("consumption-log");
+
+  function appendEntry(html) {
+    const div = document.createElement("div");
+    div.className = "alert alert-info mb-2";
+    div.innerHTML = html;
+    log.prepend(div);
+  }
+
+  document.addEventListener("barcode:scan", (e) => {
+    const token = e.detail.token;
+
+    // Fetch lot info via API
+    fetch("/api/barcodes/scan/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken]")?.value || "",
+      },
+      body: JSON.stringify({ token }),
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.target_type !== "InventoryLot") {
+        appendEntry("⚠️ That barcode is a " + data.target_type + ", not a lot.");
+        return;
+      }
+      // Prompt for quantity
+      const qty = prompt("Lot: " + data.display + "\nHow much to consume?");
+      if (!qty) return;
+
+      // Post consume via scan endpoint
+      fetch("/api/inventory/scan/consume/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken]")?.value || "",
+        },
+        body: JSON.stringify({
+          token: token,
+          quantity: qty,
+          batch_id: {{ batch.pk }},
+        }),
+      })
+      .then(r => r.json())
+      .then(res => {
+        if (res.detail) {
+          appendEntry("❌ " + res.detail);
+        } else {
+          appendEntry("✓ " + data.display + " — consumed " + qty + ", remaining " + res.remaining_on_hand);
+        }
+      })
+      .catch(err => appendEntry("❌ Error: " + err));
+    })
+    .catch(err => appendEntry("❌ Lookup failed: " + err));
+  });
+})();
+</script>
+{% endblock %}

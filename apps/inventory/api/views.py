@@ -8,10 +8,30 @@ from rest_framework.response import Response
 
 from apps.core.permissions import HasFacilityAccess
 from apps.inventory import services, selectors
-from apps.inventory.models import InventoryLot, Item, StockMovement
+
+from apps.inventory.models import (
+    InventoryLot, Item, StockMovement, UnitConversion, UnitOfMeasure,
+)
 from .serializers import (
     InventoryLotSerializer, ItemSerializer, StockMovementSerializer,
+    UnitConversionSerializer, UnitOfMeasureSerializer,
 )
+
+
+class UnitOfMeasureViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = UnitOfMeasure.objects.all()
+    serializer_class = UnitOfMeasureSerializer
+    permission_classes = [IsAuthenticated]
+    filterset_fields = ["dimension", "is_base", "is_active"]
+
+
+class UnitConversionViewSet(viewsets.ModelViewSet):
+    queryset = UnitConversion.objects.select_related(
+        "item", "from_unit", "to_unit",
+    )
+    serializer_class = UnitConversionSerializer
+    permission_classes = [IsAuthenticated]
+    filterset_fields = ["item", "from_unit", "to_unit"]
 
 
 class ItemViewSet(viewsets.ModelViewSet):

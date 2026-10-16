@@ -10,6 +10,19 @@
 
     <div class="nav-section">Operations</div>
 
+    <a href="{% url 'production:batches_list' %}"
+       class="{% if 'production:batch' in request.resolver_match.view_name %}active{% endif %}">
+      🔬 Batches
+    </a>
+    <a href="{% url 'production:tanks_list' %}"
+       class="{% if 'production:tank' in request.resolver_match.view_name %}active{% endif %}">
+      🛢️ Tanks
+    </a>
+    <a href="{% url 'production:recipes_list' %}"
+       class="{% if 'production:recipe' in request.resolver_match.view_name %}active{% endif %}">
+      📖 Recipes
+    </a>
+
     <a href="{% url 'inventory:lots_list' %}"
        class="{% if 'inventory:lot' in request.resolver_match.view_name %}active{% endif %}">
       📦 Inventory
@@ -19,10 +32,25 @@
       ⬇️ Receive Shipment
     </a>
 
+    <div class="nav-section">Sales</div>
+
+    <a href="{% url 'sales:orders_list' %}"
+       class="{% if 'sales:order' in request.resolver_match.view_name %}active{% endif %}">
+      🛒 Orders
+    </a>
+    <a href="{% url 'sales:customers_list' %}"
+       class="{% if 'sales:customer' in request.resolver_match.view_name %}active{% endif %}">
+      👥 Customers
+    </a>
+
     <div class="nav-section">Tools</div>
 
-    <a href="#">🔍 Scan Anything</a>
-    <a href="#">🏷️ Print Queue</a>
+    <a href="#" class="disabled" style="opacity: 0.4; pointer-events: none;">
+      🔍 Scan Anything <span class="badge bg-secondary ms-1">soon</span>
+    </a>
+    <a href="#" class="disabled" style="opacity: 0.4; pointer-events: none;">
+      🏷️ Print Queue <span class="badge bg-secondary ms-1">soon</span>
+    </a>
 
     {% if request.user.role == 'admin' or request.user.is_superuser %}
     <div class="nav-section">Admin</div>

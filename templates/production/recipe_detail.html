@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}{{ recipe.name }} — Pronto{% endblock %}
+
+{% block breadcrumbs %}
+<a href="{% url 'production:recipes_list' %}" class="text-decoration-none text-muted">Recipes</a>
+<span class="text-muted mx-1">/</span>
+<strong>{{ recipe.name }} v{{ recipe.version }}</strong>
+{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'production:recipe_edit' recipe.pk %}" class="btn btn-sm btn-outline-secondary">Edit</a>
+{% endblock %}
+
+{% block content %}
+<div class="row g-3 mb-4">
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-body">
+        <h4 class="mb-2">{{ recipe.name }} <small class="text-muted">v{{ recipe.version }}</small></h4>
+        <table class="table table-sm mb-0">
+          <tr><th width="140">Style</th><td>{{ recipe.style|default:"—" }}</td></tr>
+          <tr><th>Target OG</th><td>{{ recipe.target_og|default:"—" }}</td></tr>
+          <tr><th>Target FG</th><td>{{ recipe.target_fg|default:"—" }}</td></tr>
+          <tr><th>Target ABV</th><td>{{ recipe.target_abv|default:"—" }}%</td></tr>
+        </table>
+        {% if recipe.notes %}<p class="mt-3 mb-0 text-muted small">{{ recipe.notes }}</p>{% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-4">
+  <div class="card-header"><strong>Ingredients</strong></div>
+  <table class="table table-sm mb-0">
+    <thead class="table-light">
+      <tr><th>Stage</th><th>Item</th><th class="text-end">Quantity</th><th>Notes</th></tr>
+    </thead>
+    <tbody>
+      {% for ing in recipe.ingredients.all %}
+      <tr>
+        <td><span class="badge bg-light text-dark">{{ ing.stage }}</span></td>
+        <td>{{ ing.item.sku }} — {{ ing.item.name }}</td>
+        <td class="text-end">{{ ing.quantity|floatformat:3 }} {{ ing.item.unit.code }}</td>
+        <td class="text-muted small">{{ ing.notes|default:"—" }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="4" class="text-center text-muted py-3">
+        No ingredients. <a href="{% url 'production:recipe_edit' recipe.pk %}">Add some</a>.
+      </td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="card">
+  <div class="card-header"><strong>Recent batches using this recipe</strong></div>
+  <table class="table table-sm mb-0">
+    <tbody>
+      {% for b in batches %}
+      <tr>
+        <td><a href="{% url 'production:batch_detail' b.pk %}">{{ b.batch_number }}</a></td>
+        <td><span class="badge bg-secondary">{{ b.facility.code }}</span></td>
+        <td><span class="badge bg-info">{{ b.get_status_display }}</span></td>
+        <td class="small text-muted">{{ b.created_at|date:"M j, Y" }}</td>
+      </tr>
+      {% empty %}
+      <tr><td class="text-center text-muted py-3">No batches yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

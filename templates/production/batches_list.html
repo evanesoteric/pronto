@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}Batches — Pronto{% endblock %}
+
+{% block breadcrumbs %}
+<strong>Batches</strong>
+{% if facility %}<span class="text-muted ms-2">— {{ facility.name }}</span>{% endif %}
+{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'production:batch_create' %}" class="btn btn-sm btn-primary">
+  + New Batch
+</a>
+{% endblock %}
+
+{% block content %}
+<form method="get" class="row g-2 mb-3">
+  <div class="col-md-5">
+    <input type="text" name="q" value="{{ q }}" class="form-control"
+           placeholder="Search by batch number or recipe...">
+  </div>
+  <div class="col-md-3">
+    <select name="status" class="form-select" onchange="this.form.submit()">
+      <option value="">All statuses</option>
+      {% for value, label in status_choices %}
+        <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>
+          {{ label }}
+        </option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-auto">
+    <button class="btn btn-outline-secondary">Search</button>
+  </div>
+</form>
+
+<h5 class="text-muted mb-2">Active</h5>
+<div class="card mb-4">
+  <table class="table table-hover mb-0">
+    <thead class="table-light">
+      <tr>
+        <th>Batch</th><th>Recipe</th><th>Facility</th><th>Tank</th>
+        <th>Status</th><th>Brew date</th><th class="text-end"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for b in active_batches %}
+      <tr>
+        <td><a href="{% url 'production:batch_detail' b.pk %}"><strong>{{ b.batch_number }}</strong></a></td>
+        <td>{{ b.recipe.name }} <span class="text-muted small">v{{ b.recipe.version }}</span></td>
+        <td><span class="badge bg-secondary">{{ b.facility.code }}</span></td>
+        <td>{{ b.tank.name|default:"—" }}</td>
+        <td><span class="badge bg-info">{{ b.get_status_display }}</span></td>
+        <td class="small text-muted">{{ b.brew_date|default:"—" }}</td>
+        <td class="text-end">
+          <a href="{% url 'production:batch_detail' b.pk %}" class="btn btn-sm btn-outline-secondary">Open</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7" class="text-center text-muted py-4">
+        No active batches. <a href="{% url 'production:batch_create' %}">Create one</a>.
+      </td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<h5 class="text-muted mb-2">Recently closed</h5>
+<div class="card">
+  <table class="table table-sm table-hover mb-0">
+    <tbody>
+      {% for b in closed_batches %}
+      <tr>
+        <td><a href="{% url 'production:batch_detail' b.pk %}">{{ b.batch_number }}</a></td>
+        <td>{{ b.recipe.name }}</td>
+        <td><span class="badge bg-secondary">{{ b.facility.code }}</span></td>
+        <td><span class="badge bg-dark">{{ b.get_status_display }}</span></td>
+        <td class="small text-muted">{{ b.closed_at|date:"M j, Y"|default:"—" }}</td>
+      </tr>
+      {% empty %}
+      <tr><td class="text-center text-muted py-4">No closed batches yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

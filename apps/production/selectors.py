@@ -26,7 +26,7 @@ def batch_consumption(batch):
     return (
         batch.movements
         .filter(delta__lt=0)
-        .values("lot__item__sku", "lot__item__name", "lot__item__unit")
+        .values("lot__item__sku", "lot__item__name", "lot__item__unit__code")
         .annotate(total=Sum("delta"))
         .order_by("lot__item__sku")
     )

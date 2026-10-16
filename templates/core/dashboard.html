@@ -47,7 +47,7 @@
         <td>{{ lot.item.name }}</td>
         <td>{{ lot.lot_number }}</td>
         <td>{{ lot.facility.code }}</td>
-        <td class="text-end">{{ lot.quantity_on_hand }} {{ lot.item.unit }}</td>
+        <td class="text-end">{{ lot.quantity_on_hand }} {{ lot.item.unit.code }}</td>
         <td>{{ lot.received_at|date:"Y-m-d"|default:"—" }}</td>
       </tr>
       {% empty %}

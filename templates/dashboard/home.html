@@ -74,7 +74,7 @@
               <td>{{ m.lot.item.name }}</td>
               <td class="font-monospace small">{{ m.lot.lot_number }}</td>
               <td class="text-end {% if m.delta < 0 %}text-danger{% else %}text-success{% endif %}">
-                {{ m.delta|floatformat:3 }} {{ m.lot.item.unit }}
+                {{ m.delta|floatformat:3 }} {{ m.lot.item.unit.code }}
               </td>
               <td class="small">{{ m.get_reason_display }}</td>
               <td class="small text-muted">{{ m.performed_by.username }}</td>

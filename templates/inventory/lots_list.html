@@ -57,7 +57,7 @@
         </td>
         <td class="font-monospace">{{ lot.lot_number }}</td>
         <td><span class="badge bg-secondary">{{ lot.facility.code }}</span></td>
-        <td class="text-end">{{ lot.quantity_on_hand|floatformat:3 }} {{ lot.item.unit }}</td>
+        <td class="text-end">{{ lot.quantity_on_hand|floatformat:3 }} {{ lot.item.unit.code }}</td>
         <td class="text-end">${{ lot.unit_cost|floatformat:4 }}</td>
         <td class="small text-muted">
           {{ lot.received_at|date:"M j, Y"|default:"—" }}

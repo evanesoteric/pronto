@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+{% block title %}New Order — Pronto{% endblock %}
+
+{% block breadcrumbs %}
+<a href="{% url 'sales:orders_list' %}" class="text-decoration-none text-muted">Orders</a>
+<span class="text-muted mx-1">/</span>
+<strong>New</strong>
+{% endblock %}
+
+{% block content %}
+<form method="post" id="order-form">
+  {% csrf_token %}
+
+  <div class="card mb-3">
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-3">
+          <label class="form-label">Order number</label>
+          <input type="text" name="number" class="form-control font-monospace"
+                 value="{{ form_data.number|default:'' }}" required autofocus>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Customer</label>
+          <select name="customer_id" class="form-select" required>
+            <option value="">— select —</option>
+            {% for c in customers %}
+            <option value="{{ c.pk }}"
+              {% if form_data.customer_id == c.pk|stringformat:"s" %}selected{% endif %}>
+              {{ c.account_number }} — {{ c.name }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Order date</label>
+          <input type="date" name="order_date" class="form-control"
+                 value="{{ form_data.order_date|default:today }}" required>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Ship by</label>
+          <input type="date" name="ship_by" class="form-control"
+                 value="{{ form_data.ship_by|default:'' }}">
+        </div>
+        <div class="col-12">
+          <label class="form-label">Notes</label>
+          <textarea name="notes" class="form-control" rows="2">{{ form_data.notes|default:'' }}</textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h5 class="text-muted mb-2">Lines</h5>
+  <div id="lines-container"></div>
+
+  <button type="button" class="btn btn-outline-secondary btn-sm mb-3" id="add-line">
+    + Add line
+  </button>
+
+  <div class="d-flex gap-2">
+    <button type="submit" class="btn btn-primary">Create Order</button>
+    <a href="{% url 'sales:orders_list' %}" class="btn btn-outline-secondary">Cancel</a>
+  </div>
+</form>
+
+{# Hidden template for new lines — cloned by JS #}
+<div id="line-template" style="display: none;">
+  <div class="receive-line" data-line-index="__INDEX__">
+    <div class="row g-2 align-items-end">
+      <div class="col-md-5">
+        <label class="form-label small">Item</label>
+        <select name="line-__INDEX__-item_id" class="form-select item-select" required>
+          <option value="">— select —</option>
+          {% for item in finished_items %}
+          <option value="{{ item.pk }}" data-unit="{{ item.unit.code }}">
+            {{ item.sku }} — {{ item.name }} ({{ item.unit.code }})
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small">Quantity</label>
+        <div class="input-group">
+          <input type="number" step="0.001" min="0.001"
+                 name="line-__INDEX__-quantity" class="form-control"
+                 aria-label="Quantity" required>
+          <span class="input-group-text unit-display" style="min-width: 60px;">—</span>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small">Unit price</label>
+        <div class="input-group">
+          <span class="input-group-text">$</span>
+          <input type="number" step="0.01" min="0"
+                 name="line-__INDEX__-unit_price" class="form-control"
+                 aria-label="Unit price" required>
+        </div>
+      </div>
+      <div class="col-md-1 text-end">
+        <button type="button" class="btn btn-outline-danger btn-sm remove-line"
+                title="Remove line">×</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+  "use strict";
+
+  var container = document.getElementById("lines-container");
+  var template = document.getElementById("line-template");
+  var addBtn = document.getElementById("add-line");
+
+  if (!container || !template || !addBtn) {
+    console.warn("Order form JS: missing required elements");
+    return;
+  }
+
+  var nextIndex = 0;
+
+  function addLine() {
+    // Clone the template's inner HTML with the index placeholder replaced
+    var html = template.innerHTML.replace(/__INDEX__/g, String(nextIndex));
+    var wrap = document.createElement("div");
+    wrap.innerHTML = html.trim();
+    var line = wrap.firstElementChild;
+    if (line) {
+      container.appendChild(line);
+      nextIndex += 1;
+    }
+  }
+
+  function updateUnitFor(select) {
+    var selected = select.options[select.selectedIndex];
+    var unit = selected ? (selected.getAttribute("data-unit") || "—") : "—";
+    var line = select.closest(".receive-line");
+    if (!line) return;
+    var display = line.querySelector(".unit-display");
+    if (display) display.textContent = unit;
+  }
+
+  addBtn.addEventListener("click", addLine);
+
+  container.addEventListener("click", function(e) {
+    if (e.target.classList.contains("remove-line")) {
+      var line = e.target.closest(".receive-line");
+      if (line) line.remove();
+    }
+  });
+
+  // Use event delegation on change — fires for any select that matches
+  container.addEventListener("change", function(e) {
+    if (e.target.classList && e.target.classList.contains("item-select")) {
+      updateUnitFor(e.target);
+    }
+  });
+
+  // Also listen on input, in case change doesn't fire for programmatic selection
+  container.addEventListener("input", function(e) {
+    if (e.target.classList && e.target.classList.contains("item-select")) {
+      updateUnitFor(e.target);
+    }
+  });
+
+  // Start with three lines
+  addLine();
+  addLine();
+  addLine();
+})();
+</script>
+{% endblock %}

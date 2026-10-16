@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Start Brew — {{ batch.batch_number }}{% endblock %}
+
+{% block breadcrumbs %}
+<a href="{% url 'production:batches_list' %}" class="text-decoration-none text-muted">Batches</a>
+<span class="text-muted mx-1">/</span>
+<a href="{% url 'production:batch_detail' batch.pk %}" class="text-decoration-none text-muted">{{ batch.batch_number }}</a>
+<span class="text-muted mx-1">/</span>
+<strong>Start Brew</strong>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="card mb-3">
+      <div class="card-header"><strong>Ingredients to Consume</strong></div>
+      <table class="table table-sm mb-0">
+        <thead class="table-light">
+          <tr><th>Stage</th><th>Item</th><th class="text-end">Required</th><th class="text-end">On Hand</th><th class="text-end">Status</th></tr>
+        </thead>
+        <tbody>
+          {% for row in ingredient_status %}
+          <tr>
+            <td><span class="badge bg-light text-dark">{{ row.stage }}</span></td>
+            <td>{{ row.item.sku }} — {{ row.item.name }}</td>
+            <td class="text-end">{{ row.required|floatformat:3 }} {{ row.item.unit.code }}</td>
+            <td class="text-end">{{ row.on_hand|floatformat:3 }} {{ row.item.unit.code }}</td>
+            <td class="text-end">
+              {% if row.sufficient %}
+                <span class="badge bg-success">OK</span>
+              {% else %}
+                <span class="badge bg-danger">Short {{ row.short_by|floatformat:3 }}</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if all_sufficient %}
+    <div class="alert alert-success">
+      All ingredients are available. Starting the brew will consume them
+      from inventory using FIFO.
+    </div>
+
+    <form method="post">
+      {% csrf_token %}
+      <div class="mb-3">
+        <label class="form-label">Scaling factor</label>
+        <input type="number" step="0.001" min="0.001" name="scaling_factor"
+               value="1.0" class="form-control" style="max-width: 200px;">
+        <div class="form-text">Use 2.0 to brew a double batch, 0.5 for a half batch.</div>
+      </div>
+
+      <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary btn-lg">
+          ▶️ Confirm & Start Brew
+        </button>
+        <a href="{% url 'production:batch_detail' batch.pk %}"
+           class="btn btn-outline-secondary btn-lg">Cancel</a>
+      </div>
+    </form>
+    {% else %}
+    <div class="alert alert-danger">
+      Cannot start brew — inventory is short on one or more ingredients.
+      <a href="{% url 'inventory:receive_form' %}" class="alert-link">Receive stock</a>
+      and try again.
+    </div>
+    <a href="{% url 'production:batch_detail' batch.pk %}" class="btn btn-outline-secondary">
+      Back to batch
+    </a>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

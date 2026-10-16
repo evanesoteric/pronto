@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Customers — Pronto{% endblock %}
+
+{% block breadcrumbs %}<strong>Customers</strong>{% endblock %}
+
+{% block content %}
+<form method="get" class="row g-2 mb-3">
+  <div class="col-md-6">
+    <input type="text" name="q" value="{{ q }}" class="form-control"
+           placeholder="Search by name or account number...">
+  </div>
+  <div class="col-auto"><button class="btn btn-outline-secondary">Search</button></div>
+</form>
+
+<div class="card">
+  <table class="table table-hover mb-0">
+    <thead class="table-light">
+      <tr><th>Account</th><th>Name</th><th>Email</th><th>Price tier</th><th>Status</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for c in customers %}
+      <tr>
+        <td class="font-monospace">{{ c.account_number }}</td>
+        <td><a href="{% url 'sales:customer_detail' c.pk %}"><strong>{{ c.name }}</strong></a></td>
+        <td>{{ c.email|default:"—" }}</td>
+        <td>{{ c.price_tier }}</td>
+        <td>
+          {% if c.is_active %}
+            <span class="badge bg-success">Active</span>
+          {% else %}
+            <span class="badge bg-secondary">Inactive</span>
+          {% endif %}
+        </td>
+        <td class="text-end">
+          <a href="{% url 'sales:customer_detail' c.pk %}" class="btn btn-sm btn-outline-secondary">Open</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" class="text-center text-muted py-4">
+        No customers. Create them in <a href="/admin/sales/customer/">Django admin</a>.
+      </td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

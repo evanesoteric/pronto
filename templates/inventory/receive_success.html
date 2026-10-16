@@ -36,8 +36,8 @@
             </div>
             <div class="mt-2">
               <span class="fs-5">{{ m.delta|floatformat:3 }}</span>
-              {{ m.lot.item.unit }} received at
-              ${{ m.lot.unit_cost|floatformat:4 }} / {{ m.lot.item.unit }}
+              {{ m.lot.item.unit.code }} received at
+              ${{ m.lot.unit_cost|floatformat:4 }} / {{ m.lot.item.unit.code }}
             </div>
             {% if m.reference %}
             <div class="small text-muted mt-1">Ref: {{ m.reference }}</div>

@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}{{ customer.name }} — Pronto{% endblock %}
+
+{% block breadcrumbs %}
+<a href="{% url 'sales:customers_list' %}" class="text-decoration-none text-muted">Customers</a>
+<span class="text-muted mx-1">/</span>
+<strong>{{ customer.name }}</strong>
+{% endblock %}
+
+{% block content %}
+<div class="row g-3 mb-4">
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-body">
+        <h4 class="mb-2">{{ customer.name }}</h4>
+        <div class="text-muted font-monospace mb-3">{{ customer.account_number }}</div>
+        <table class="table table-sm mb-0">
+          <tr><th width="140">Email</th><td>{{ customer.email|default:"—" }}</td></tr>
+          <tr><th>Price tier</th><td>{{ customer.price_tier }}</td></tr>
+          <tr><th>Tax exempt</th><td>{{ customer.tax_exempt|yesno:"Yes,No" }}</td></tr>
+          <tr><th>Status</th><td>
+            {% if customer.is_active %}
+              <span class="badge bg-success">Active</span>
+            {% else %}
+              <span class="badge bg-secondary">Inactive</span>
+            {% endif %}
+          </td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><strong>Order history</strong></div>
+  <table class="table table-sm mb-0">
+    <thead class="table-light">
+      <tr><th>Order</th><th>Date</th><th>Status</th><th>Facility</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for o in orders %}
+      <tr>
+        <td><a href="{% url 'sales:order_detail' o.pk %}">{{ o.number }}</a></td>
+        <td class="small text-muted">{{ o.order_date }}</td>
+        <td><span class="badge bg-info">{{ o.get_status_display }}</span></td>
+        <td><span class="badge bg-secondary">{{ o.facility.code }}</span></td>
+        <td class="text-end">
+          <a href="{% url 'sales:order_detail' o.pk %}" class="btn btn-sm btn-outline-secondary">Open</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="5" class="text-center text-muted py-4">No orders yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

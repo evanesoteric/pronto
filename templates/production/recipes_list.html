@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Recipes — Pronto{% endblock %}
+
+{% block breadcrumbs %}<strong>Recipes</strong>{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'production:recipe_create' %}" class="btn btn-sm btn-primary">+ New Recipe</a>
+{% endblock %}
+
+{% block content %}
+<form method="get" class="row g-2 mb-3">
+  <div class="col-md-6">
+    <input type="text" name="q" value="{{ q }}" class="form-control"
+           placeholder="Search recipes by name or style...">
+  </div>
+  <div class="col-auto"><button class="btn btn-outline-secondary">Search</button></div>
+</form>
+
+<div class="card">
+  <table class="table table-hover mb-0">
+    <thead class="table-light">
+      <tr><th>Name</th><th>Version</th><th>Style</th><th>Ingredients</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for r in recipes %}
+      <tr>
+        <td><a href="{% url 'production:recipe_detail' r.pk %}"><strong>{{ r.name }}</strong></a></td>
+        <td>v{{ r.version }}</td>
+        <td>{{ r.style|default:"—" }}</td>
+        <td>{{ r.ingredients.count }}</td>
+        <td class="text-end">
+          <a href="{% url 'production:recipe_edit' r.pk %}" class="btn btn-sm btn-outline-secondary">Edit</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="5" class="text-center text-muted py-4">
+        No recipes. <a href="{% url 'production:recipe_create' %}">Create one</a>.
+      </td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

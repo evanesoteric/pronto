@@ -32,9 +32,9 @@
               <tr><th width="140">Lot number</th><td class="font-monospace">{{ lot.lot_number }}</td></tr>
               <tr><th>On hand</th><td>
                 <span class="fs-5">{{ lot.quantity_on_hand|floatformat:3 }}</span>
-                {{ lot.item.unit }}
+                {{ lot.item.unit.code }}
               </td></tr>
-              <tr><th>Unit cost</th><td>${{ lot.unit_cost|floatformat:4 }} / {{ lot.item.unit }}</td></tr>
+              <tr><th>Unit cost</th><td>${{ lot.unit_cost|floatformat:4 }} / {{ lot.item.unit.code }}</td></tr>
               <tr><th>Total value</th><td>${{ lot.value|floatformat:2 }}</td></tr>
             </table>
           </div>

@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+{% block title %}{{ batch.batch_number }} — Pronto{% endblock %}
+
+{% block breadcrumbs %}
+<a href="{% url 'production:batches_list' %}" class="text-decoration-none text-muted">Batches</a>
+<span class="text-muted mx-1">/</span>
+<strong>{{ batch.batch_number }}</strong>
+{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'production:scan_brew' batch.pk %}" class="btn btn-sm btn-outline-secondary">📱 Scan brew</a>
+{% endblock %}
+
+{% block content %}
+<div class="row g-3 mb-4">
+  <div class="col-md-8">
+    <div class="card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start mb-3">
+          <div>
+            <h4 class="mb-1">{{ batch.batch_number }}</h4>
+            <div class="text-muted">
+              {{ batch.recipe.name }} v{{ batch.recipe.version }}
+              {% if batch.recipe.style %}· {{ batch.recipe.style }}{% endif %}
+            </div>
+          </div>
+          <div class="text-end">
+            <span class="badge bg-info fs-6">{{ batch.get_status_display }}</span>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-6">
+            <table class="table table-sm mb-0">
+              <tr><th width="140">Facility</th><td>{{ batch.facility.name }}</td></tr>
+              <tr><th>Tank</th><td>{{ batch.tank.name|default:"—" }}</td></tr>
+              <tr><th>Planned volume</th><td>{{ batch.planned_volume_liters|floatformat:2 }} L</td></tr>
+              <tr><th>Actual volume</th><td>{{ batch.actual_volume_liters|floatformat:2 }} L</td></tr>
+            </table>
+          </div>
+          <div class="col-md-6">
+            <table class="table table-sm mb-0">
+              <tr><th width="140">Brew date</th><td>{{ batch.brew_date|default:"—" }}</td></tr>
+              <tr><th>Packaged</th><td>{{ batch.packaged_at|date:"M j, Y H:i"|default:"—" }}</td></tr>
+              <tr><th>Closed</th><td>{{ batch.closed_at|date:"M j, Y H:i"|default:"—" }}</td></tr>
+              <tr><th>Ingredient cost</th><td>${{ total_cost|floatformat:4 }}</td></tr>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-header"><strong>Actions</strong></div>
+      <div class="card-body d-grid gap-2">
+        {% if batch.status == "planned" %}
+          {% if can_start %}
+            <a href="{% url 'production:batch_start_brew' batch.pk %}" class="btn btn-primary">
+              ▶️ Start Brew
+            </a>
+          {% else %}
+            <button class="btn btn-secondary" disabled>▶️ Start Brew (short on stock)</button>
+          {% endif %}
+        {% endif %}
+
+        {% if batch.status == "brewing" or batch.status == "fermenting" %}
+          <a href="{% url 'production:batch_transfer' batch.pk %}" class="btn btn-primary">
+            🛢️ Transfer to Tank
+          </a>
+        {% endif %}
+
+        {% if batch.status == "conditioning" %}
+          <a href="{% url 'production:batch_package' batch.pk %}" class="btn btn-primary">
+            📦 Package
+          </a>
+        {% endif %}
+
+        {% if next_status == "conditioning" %}
+          <form method="post" action="{% url 'production:batch_advance' batch.pk %}">
+            {% csrf_token %}
+            <input type="hidden" name="to_status" value="conditioning">
+            <button class="btn btn-outline-primary w-100">➡️ Advance to Conditioning</button>
+          </form>
+        {% endif %}
+
+        {% if next_status == "closed" %}
+          <form method="post" action="{% url 'production:batch_advance' batch.pk %}">
+            {% csrf_token %}
+            <input type="hidden" name="to_status" value="closed">
+            <button class="btn btn-outline-primary w-100">✔️ Close Batch</button>
+          </form>
+        {% endif %}
+
+        {% if not next_status and batch.status == "closed" %}
+          <div class="text-center text-muted small py-2">Batch is closed.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+{# Ingredient availability #}
+<div class="card mb-4">
+  <div class="card-header"><strong>Ingredients</strong></div>
+  <table class="table table-sm mb-0">
+    <thead class="table-light">
+      <tr>
+        <th>Stage</th><th>Item</th>
+        <th class="text-end">Required</th>
+        <th class="text-end">On Hand</th>
+        <th class="text-end">Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in ingredient_status %}
+      <tr>
+        <td><span class="badge bg-light text-dark">{{ row.stage }}</span></td>
+        <td>
+          <strong>{{ row.item.sku }}</strong>
+          <div class="small text-muted">{{ row.item.name }}</div>
+        </td>
+        <td class="text-end">{{ row.required|floatformat:3 }} {{ row.item.unit.code }}</td>
+        <td class="text-end">{{ row.on_hand|floatformat:3 }} {{ row.item.unit.code }}</td>
+        <td class="text-end">
+          {% if row.sufficient %}
+            <span class="badge bg-success">OK</span>
+          {% else %}
+            <span class="badge bg-danger">Short {{ row.short_by|floatformat:3 }}</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="5" class="text-center text-muted py-3">
+        No ingredients defined for this recipe.
+      </td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{# Consumption #}
+{% if consumption %}
+<div class="card mb-4">
+  <div class="card-header"><strong>Consumed</strong></div>
+  <table class="table table-sm mb-0">
+    <thead class="table-light">
+      <tr><th>Item</th><th class="text-end">Total Consumed</th></tr>
+    </thead>
+    <tbody>
+      {% for c in consumption %}
+      <tr>
+        <td>
+          <strong>{{ c.lot__item__sku }}</strong>
+          <div class="small text-muted">{{ c.lot__item__name }}</div>
+        </td>
+        <td class="text-end">{{ c.total|floatformat:3 }} {{ c.lot__item__unit }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}
